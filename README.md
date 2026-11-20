@@ -1,4 +1,4 @@
-# Local Second Opinion — webcam coaching demo
+# Mirra Call Local Second Opinion — webcam coaching demo
 
 A webcam demo that guides a participant through washing their face with a face
 towel, with live movement feedback and coaching tips. Participant routes are
