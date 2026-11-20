@@ -136,7 +136,7 @@ export function canRecord(c: ConsentChoices): boolean {
   return c.recording;
 }
 
-/** Coach summaries may be sent to the cloud model. */
+/** Coach summaries may be sent to the configured model endpoint. */
 export function canSendSummary(c: ConsentChoices): boolean {
   return c.cloud_summary;
 }

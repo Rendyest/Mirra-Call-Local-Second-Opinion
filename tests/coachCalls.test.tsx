@@ -102,6 +102,17 @@ describe('coach call log', () => {
   });
 });
 
+describe('visible model proof', () => {
+  it('names Qwen3-VL 2B on the delivered tip and reviewer log', () => {
+    expect(LIVE_TIP_NOTE).toBe('Live tip from Qwen3-VL 2B.');
+    expect(COACH_CALLS_LIVE).toContain('Qwen3-VL 2B');
+    expect(COACH_CALLS_SECTION_TITLE).toContain('Qwen3-VL 2B');
+    for (const s of [LIVE_TIP_NOTE, COACH_CALLS_LIVE, COACH_CALLS_SECTION_TITLE]) {
+      expect(s.toLowerCase()).not.toContain('muse spark');
+    }
+  });
+});
+
 describe('coach panel live marker', () => {
   it('idle panel shows no live note', () => {
     const html = renderToStaticMarkup(

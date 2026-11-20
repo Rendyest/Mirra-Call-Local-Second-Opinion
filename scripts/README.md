@@ -1,5 +1,20 @@
 # Clip masking (standalone Python)
 
+## Qwen utilities
+
+The model-backed scripts (`qwen_coaching.py`, `label_videos.py`, and
+`test_qwen.py`) need the OpenAI client and dotenv loader:
+
+```
+python -m pip install -r scripts/requirements-model.txt
+```
+
+They use the root `.env` values `MODEL_NAME`, `MODEL_API_BASE_URL`, and
+optional `MODEL_API_KEY`. Defaults target `qwen3-vl:2b` through local Ollama
+at `http://127.0.0.1:11434/v1`.
+
+## Clip masking
+
 `mask_clips.py` re-exports face-masked copies of local video files for the
 labelling step. It is separate from the web app and shares no code with it.
 

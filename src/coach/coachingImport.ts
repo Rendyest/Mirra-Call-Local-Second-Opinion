@@ -1,5 +1,5 @@
 /**
- * Imported coaching tips from the offline muse_coaching.py script. The
+ * Imported coaching tips from the offline qwen_coaching.py script. The
  * validator mirrors the script's own validate_coaching rules: required
  * fields and types, severity from the script's set, and a short cue.
  * Imported tips are playback only — they never count as a System 2 call.

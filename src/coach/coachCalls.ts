@@ -5,7 +5,7 @@ import type { System1StateName, TopSignal } from '../contracts';
 export type CoachCallTrigger = 'escalation' | 'button';
 
 /**
- * What the proxy returned. `live` means the cloud model answered through
+ * What the proxy returned. `live` means Qwen3-VL 2B answered through
  * server/proxy.mjs; `fallback` means the panel showed the local message.
  * Imported script tips never enter this log — they make no call at all.
  */

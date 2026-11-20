@@ -1,7 +1,7 @@
 /**
  * Coach proxy: the only server route the app calls. The client POSTs ONLY
  * the aggregate summary object to /api/coach (see src/coach/summary.ts);
- * this server validates it, forwards it to the configured Muse Spark
+ * this server validates it, forwards it to the configured Qwen model
  * endpoint, and returns the coaching message.
  *
  * - The key comes from the server environment (see .env.example).
@@ -19,7 +19,8 @@ import { validateCoachSummary } from './validate.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BODY_LIMIT = 100 * 1024;
-const MUSE_RESPONSES_URL = 'https://api.meta.ai/v1/responses';
+const DEFAULT_MODEL_API_BASE_URL = 'http://127.0.0.1:11434/v1';
+const DEFAULT_MODEL = 'qwen3-vl:2b';
 
 function loadCoachConfig() {
   const raw = readFileSync(path.join(ROOT, 'src', 'config', 'config.default.json'), 'utf-8');
@@ -54,16 +55,21 @@ function json(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
-/** Read the same Responses output text that the Python SDK aggregates. */
+/** Read the assistant text from an OpenAI-compatible chat completion. */
 function extractCue(upstream) {
-  if (upstream?.status !== 'completed' || !Array.isArray(upstream.output)) return null;
-  const text = upstream.output
-    .filter((item) => item?.type === 'message' && Array.isArray(item.content))
-    .flatMap((item) => item.content)
-    .filter((part) => part?.type === 'output_text' && typeof part.text === 'string')
-    .map((part) => part.text)
-    .join('');
-  const tip = JSON.parse(text);
+  const content = upstream?.choices?.[0]?.message?.content;
+  const text = typeof content === 'string'
+    ? content
+    : Array.isArray(content)
+      ? content.filter((part) => part?.type === 'text').map((part) => part.text).join('')
+      : '';
+  const jsonText = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  let tip;
+  try {
+    tip = JSON.parse(jsonText.replace(/^```(?:json)?\s*|\s*```$/gi, ''));
+  } catch {
+    return null;
+  }
   if (!tip ||
       typeof tip.struggling !== 'boolean' ||
       typeof tip.signal !== 'string' ||
@@ -125,7 +131,16 @@ function replyProblem(message, maxChars) {
   return null;
 }
 
-export function createCoachServer({ apiKey, timeoutMs, cooldownMs, maxReplyChars, fetchImpl = fetch }) {
+export function createCoachServer({
+  apiKey,
+  apiBaseUrl = process.env.MODEL_API_BASE_URL?.trim() || DEFAULT_MODEL_API_BASE_URL,
+  model = process.env.MODEL_NAME?.trim() || DEFAULT_MODEL,
+  timeoutMs,
+  cooldownMs,
+  maxReplyChars,
+  fetchImpl = fetch,
+}) {
+  const apiUrl = `${apiBaseUrl.replace(/\/+$/, '')}/chat/completions`;
   let lastCallAt = 0;
   const server = http.createServer(async (req, res) => {
     if (req.method !== 'POST' || req.url !== '/api/coach') {
@@ -168,14 +183,21 @@ export function createCoachServer({ apiKey, timeoutMs, cooldownMs, maxReplyChars
     const abortOnDisconnect = () => controller.abort();
     res.once('close', abortOnDisconnect);
     try {
-      const upstream = await fetchImpl(MUSE_RESPONSES_URL, {
+      const upstream = await fetchImpl(apiUrl, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        headers: {
+          'content-type': 'application/json',
+          ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+        },
         body: JSON.stringify({
-          model: 'muse-spark-1.3',
-          input: `${PROMPT_INSTRUCTION}\n\nMovement observations:\n${JSON.stringify(neutralizeSummary(body))}`,
-          reasoning: { effort: 'low' },
-          max_output_tokens: 1200,
+          model,
+          messages: [
+            { role: 'system', content: PROMPT_INSTRUCTION },
+            { role: 'user', content: `Movement observations:\n${JSON.stringify(neutralizeSummary(body))}` },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+          max_tokens: 1200,
         }),
         signal: controller.signal,
         redirect: 'error',
@@ -195,6 +217,7 @@ export function createCoachServer({ apiKey, timeoutMs, cooldownMs, maxReplyChars
         json(res, 502, { error: 'coach reply rejected' });
         return;
       }
+      console.log({ event: 'coach_live', model });
       json(res, 200, { message });
     } catch {
       if (res.destroyed) return;
@@ -221,10 +244,6 @@ if (invokedAsScript) {
     }
   }
   const apiKey = process.env.MODEL_API_KEY?.trim();
-  if (!apiKey) {
-    console.error('Set MODEL_API_KEY in the repository .env or the server environment.');
-    process.exit(1);
-  }
   const { timeoutMs, cooldownMs, maxReplyChars } = loadCoachConfig();
   const server = createCoachServer({
     apiKey,

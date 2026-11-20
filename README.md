@@ -14,9 +14,10 @@ towel, with live movement feedback and coaching tips. Participant routes are
   `video_diagnostics.py`) for the offline loop, replay harness, and
   diagnostics.
 - Live coaching: with consent, a Node proxy (`server/proxy.mjs`) forwards an
-  aggregate movement summary to the Muse Spark Responses API and returns a
-  tip. When cloud coaching is disabled or a request fails, the app labels the
-  fallback as a **Local tip**. No video ever leaves the browser.
+  aggregate movement summary to a configured Qwen3-VL 2B endpoint and returns
+  a tip. The default endpoint is local Ollama; no video ever leaves the browser.
+  When model coaching is disabled or a request fails, the app labels the
+  fallback as a **Local tip**.
 - Mock and synthetic data (never results): `public/mock-stream.json` replays
   a fixed event stream, and `scripts/make-demo-data.mjs` generates
   deterministic synthetic clips for the reviewer routes (gitignored output).
@@ -39,9 +40,17 @@ npm run dev        # open the printed localhost URL (webcam needs localhost or H
 npm test           # vitest suite
 ```
 
-For live cloud coaching, copy the example env if you do not already have a
-`.env`, set `MODEL_API_KEY`, and run the proxy alongside the frontend in
-separate PowerShell windows from the repository root:
+For live coaching, install Ollama and fetch the model once:
+
+```powershell
+ollama pull qwen3-vl:2b
+```
+
+Then run the proxy alongside the frontend in separate PowerShell windows
+from the repository root. The default endpoint is
+`http://127.0.0.1:11434/v1`; hosted OpenAI-compatible endpoints can be
+selected with `MODEL_API_BASE_URL`, `MODEL_NAME`, and (when
+required) `MODEL_API_KEY` in `.env`.
 
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }

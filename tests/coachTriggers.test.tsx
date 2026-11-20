@@ -93,6 +93,7 @@ it('sends one automatic request per escalation and suppresses new pulses during 
   render({ escalationId: 1, onOutcome });
   render({ escalationId: 1 });
   await vi.waitFor(() => expect(render({ escalationId: 1 })).toContain('Take your time.'));
+  expect(render({ escalationId: 1 })).toContain('Live tip from Qwen3-VL 2B.');
   render({ escalationId: 2 });
   expect(fetchCoach).toHaveBeenCalledOnce();
   expect(onOutcome).toHaveBeenCalledOnce();
@@ -117,7 +118,7 @@ it('uses the manual request path and labels an unavailable cloud response as loc
   expect(click).toBeDefined();
   click?.();
   await vi.waitFor(() => expect(render()).toContain('Local tip:'));
-  expect(render()).not.toContain('Live tip from the cloud model.');
+  expect(render()).not.toContain('Live tip from Qwen3-VL 2B.');
   expect(fetchCoach).toHaveBeenCalledOnce();
 });
 

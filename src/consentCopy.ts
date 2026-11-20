@@ -19,9 +19,9 @@ export const CONSENT_RECORDING_TEXT =
   'Recording keeps only numbers for body and face points over time. No video, no pictures. ' +
   'It stays in this browser until you choose to download it. Nothing is uploaded.';
 
-export const CONSENT_SUMMARY_LABEL = 'Allow short summaries of my movement to be sent to the cloud model';
+export const CONSENT_SUMMARY_LABEL = 'Allow short summaries of my movement to be sent to the configured model';
 export const CONSENT_SUMMARY_TEXT =
-  'During a session, a short summary of your movement is sent to a cloud AI model (Muse Spark) to write tips: ' +
+  'During a session, a short summary of your movement is sent to the configured Qwen model endpoint to write tips: ' +
   'the task name, the smallest, largest and average of each angle, how long the session ran, ' +
   'what the movement detector noticed, and whether you reached your face and for how long you held. ' +
   'No pictures, no video, no body points.';

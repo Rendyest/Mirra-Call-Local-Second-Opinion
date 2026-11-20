@@ -1,18 +1,9 @@
 
-import os
 import json
 from pathlib import Path
 
-from dotenv import load_dotenv
-from openai import OpenAI
-
 ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(ROOT / ".env")
-
-client = OpenAI(
-    api_key=os.environ["MODEL_API_KEY"],
-    base_url="https://api.meta.ai/v1",
-)
+from model_client import MODEL_NAME, client, response_text
 
 LABEL_DIR = ROOT / "data" / "labels"
 LABEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,19 +35,15 @@ Required fields:
 - needs_review: true or false
 """
 
-    response = client.responses.create(
-        model="muse-spark-1.3",
-        input=prompt,
-        reasoning={"effort": "low"},
-        max_output_tokens=1200,
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0.2,
+        max_tokens=1200,
     )
 
-    if response.status != "completed":
-        raise RuntimeError(
-            f"Incomplete response: {response.incomplete_details}"
-        )
-
-    result = json.loads(response.output_text.strip())
+    result = json.loads(response_text(response))
 
     if not isinstance(result, dict):
         raise ValueError("Expected a JSON object")
@@ -97,14 +84,14 @@ if __name__ == "__main__":
         "sampling_interval_seconds": 0.5,
     }
 
-    print("Sending sample movement to Muse Spark...")
+    print(f"Sending sample movement to {MODEL_NAME}...")
 
     label = label_movement(sample)
 
     output = {
         "clip_id": sample["clip_id"],
         "source": "synthetic_test",
-        "model": "muse-spark-1.3",
+        "model": MODEL_NAME,
         **label,
     }
 

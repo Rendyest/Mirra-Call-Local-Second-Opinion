@@ -19,7 +19,7 @@ Second Opinion provides accessible, personalized, AI-assisted rehabilitation coa
 
 ## Positioning
 
-The webcam and MediaPipe pipeline track movement, joint angles, and exercise progress locally. System 1 detects potential difficulties such as stalling, jitter, and compensatory movements. With consent, Muse Spark (System 2) uses a short movement summary to provide supportive, context-aware tips when appropriate.
+The webcam and MediaPipe pipeline track movement, joint angles, and exercise progress locally. System 1 detects potential difficulties such as stalling, jitter, and compensatory movements. With consent, Qwen3-VL 2B (System 2) uses a short movement summary to provide supportive, context-aware tips when appropriate.
 
 ## Operating Context
 
@@ -28,7 +28,7 @@ The webcam and MediaPipe pipeline track movement, joint angles, and exercise pro
 
 ## Capabilities and Constraints
 
-- Preserve the React and TypeScript frontend, existing backend integrations, MediaPipe pipeline, System 1 detector, and Muse Spark integration.
+- Preserve the React and TypeScript frontend, existing backend integrations, MediaPipe pipeline, System 1 detector, and Qwen3-VL 2B integration.
 - Preserve camera permissions, informed consent, local camera processing, calibration, pause and stop controls, and privacy safeguards. Cloud coaching requires consent. Keep core exercise workflows usable with cloud coaching disabled or unavailable, using existing local functionality where supported.
 - Verify visible controls and navigation through the normal workflows, including camera access, calibration, session interactions, and supported AI integrations.
 

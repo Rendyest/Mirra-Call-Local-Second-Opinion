@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CoachPanel } from '../src/components/CoachPanel';
 import { cancelSpeech, loadSpeakTips, saveSpeakTips, speakTip } from '../src/coach/speech';
-import { READ_ALOUD_NOTE, READ_ALOUD_OFF, READ_ALOUD_ON, SPARK_ENABLE_LABEL } from '../src/copy';
+import { READ_ALOUD_NOTE, READ_ALOUD_OFF, READ_ALOUD_ON, QWEN_ENABLE_LABEL } from '../src/copy';
 import type { PoseFrame } from '../src/contracts';
 
 const BANNED = /\b(fps|frames?|calls?|saved|flag rate|latency|escalat\w*)\b/i;
@@ -95,17 +95,17 @@ describe('spoken coaching', () => {
         escalationId={0}
         statsEpoch="test"
         consent={{ camera: false, recording: false, cloud_summary: false, cloud_clips: false }}
-        onEnableSpark={() => {}}
+        onEnableQwen={() => {}}
       />,
     );
-    expect(html).toContain(SPARK_ENABLE_LABEL);
+    expect(html).toContain(QWEN_ENABLE_LABEL);
     expect(html).not.toContain('Tips are off');
     expect(html).not.toContain('Get a tip');
     expect(html).not.toMatch(BANNED);
   });
 
   it('labels both toggle states without digits', () => {
-    for (const s of [READ_ALOUD_ON, READ_ALOUD_OFF, READ_ALOUD_NOTE, SPARK_ENABLE_LABEL]) {
+    for (const s of [READ_ALOUD_ON, READ_ALOUD_OFF, READ_ALOUD_NOTE, QWEN_ENABLE_LABEL]) {
       expect(s).not.toMatch(BANNED);
       expect(s).not.toMatch(/\d/);
     }

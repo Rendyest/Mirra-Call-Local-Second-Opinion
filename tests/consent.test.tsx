@@ -209,8 +209,8 @@ describe('consent copy is truthful and check-safe', () => {
     }
   });
 
-  it('names the cloud recipient as a cloud AI model (Muse Spark)', () => {
-    expect(CONSENT_SUMMARY_TEXT).toContain('a cloud AI model (Muse Spark)');
+  it('names Qwen as the configured summary recipient', () => {
+    expect(CONSENT_SUMMARY_TEXT).toContain('configured Qwen model endpoint');
   });
 
   it('says plainly that no video is sent', () => {

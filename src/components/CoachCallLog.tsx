@@ -11,7 +11,7 @@ import {
 
 /**
  * Reviewer log of System 2 attempts on /metrics: every completed proxy call
- * shows whether the tip came from the live cloud model or the local
+ * shows whether the tip came from live Qwen3-VL 2B or the local
  * fallback, what System 1 state triggered it, and how it started.
  * Imported script tips never appear here — they make no call.
  */

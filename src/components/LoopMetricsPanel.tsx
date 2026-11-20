@@ -112,7 +112,7 @@ export function LoopMetricsPanel({ summary }: { summary: ReplaySummary | null })
         <li>Gate flag rate: {(summary.flagRate * 100).toFixed(1)}%</li>
         <li>Duration: {summary.durationS.toFixed(1)} s</li>
       </ul>
-      <h3>Muse Spark calls made</h3>
+      <h3>Qwen3-VL 2B calls made</h3>
       <ul>
         <li>every_frame: {every} calls</li>
         <li>fixed_interval (every {summary.policies.fixedInterval.intervalS} s): {fixed} calls</li>

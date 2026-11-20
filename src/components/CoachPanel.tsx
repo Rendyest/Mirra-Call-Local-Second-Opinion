@@ -17,7 +17,7 @@ import {
   READ_ALOUD_NOTE,
   READ_ALOUD_OFF,
   READ_ALOUD_ON,
-  SPARK_ENABLE_LABEL,
+  QWEN_ENABLE_LABEL,
   TASK_NAME,
 } from '../copy';
 import { loadAutoTips, saveAutoTips } from '../coach/autoTips';
@@ -55,7 +55,7 @@ interface CoachPanelProps {
    * Opt-in handler: pressing it ticks the cloud-summary choice itself, so it
    * is an explicit enable. Without it the panel shows the tips-off note.
    */
-  onEnableSpark?: () => void;
+  onEnableQwen?: () => void;
   active?: boolean;
   onOutcome?: (trigger: CoachCallTrigger, outcome: SessionCoachOutcome) => void;
 }
@@ -67,11 +67,11 @@ const useRequestLifecycle = typeof window === 'undefined' ? useEffect : useLayou
  * Participant coaching panel. Idle, escalating ("Checking in..."), delivered,
  * or local fallback, with a cooldown after every call. The request body is
  * only the aggregate summary (task, per-angle min/max/mean, duration, System 1
- * state) GÇö never joints, frames, or images. Failures and timeouts fall back
+ * state) Gï¿½ï¿½ never joints, frames, or images. Failures and timeouts fall back
  * to a local message and are logged to the console only, without the summary
  * values, and never block the session. Every completed attempt is recorded
  * in the coach call log for the reviewer page; a delivered tip also carries
- * a short note naming it as a live cloud-model tip.
+ * a short note naming it as a live Qwen3-VL 2B tip.
  */
 export function CoachPanel({
   frame,
@@ -82,7 +82,7 @@ export function CoachPanel({
   statsEpoch,
   consent,
   paused = false,
-  onEnableSpark,
+  onEnableQwen,
   active = true,
   onOutcome,
 }: CoachPanelProps) {
@@ -176,7 +176,7 @@ export function CoachPanel({
     pending.current = null;
     onOutcome?.(trigger, result.ok ? 'live' : 'fallback');
     // Every completed attempt enters the reviewer log on /metrics: a proxy
-    // success is a live cloud-model tip, anything else is the local fallback.
+    // success is a live Qwen3-VL 2B tip, anything else is the local fallback.
     recordCoachCall({ trigger, state: systemState, topSignal, outcome: result.ok ? 'live' : 'fallback' });
     if (result.ok) {
       setMessage(result.message);
@@ -210,7 +210,7 @@ export function CoachPanel({
   };
 
   // Spoken coaching: every shown tip is read aloud unless sound is off.
-  // Cleanup stops the voice on dismiss, a new request, or unmount — speech
+  // Cleanup stops the voice on dismiss, a new request, or unmount ï¿½ speech
   // never blocks the session. Imported script tips are not spoken.
   useEffect(() => {
     if (!speakTips) return;
@@ -225,7 +225,7 @@ export function CoachPanel({
     <section className="panel coaching-panel" aria-label="Coaching">
       <div className="section-heading">
         <h2>Coaching</h2>
-        <span className="source-label">{summaryOn ? 'Muse Spark enabled' : 'Local feedback'}</span>
+        <span className="source-label">{summaryOn ? 'Qwen3-VL 2B enabled' : 'Local feedback'}</span>
       </div>
       {status === 'idle' && <p className="muted">{active
         ? 'Ask for a cue when your movement is in view.'
@@ -272,9 +272,9 @@ export function CoachPanel({
           <button className='primary-button' type='button' onClick={() => void request('button')} disabled={blocked || status === 'escalating'}>
             {COACH_BUTTON_LABEL}
           </button>
-        ) : onEnableSpark && !cantSeeYouActive ? (
-          <button type="button" onClick={onEnableSpark}>
-            {SPARK_ENABLE_LABEL}
+        ) : onEnableQwen && !cantSeeYouActive ? (
+          <button type="button" onClick={onEnableQwen}>
+            {QWEN_ENABLE_LABEL}
           </button>
         ) : (
           <button className='primary-button' type='button' onClick={() => void request('button')} disabled={blocked || status === 'escalating'}>

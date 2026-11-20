@@ -41,8 +41,8 @@ export const CHECKING_IN = 'Checking in...';
 
 export const LOCAL_FALLBACK = 'Take your time. Try slowing down.';
 
-/** Shown under a delivered tip that answered from the live cloud model. */
-export const LIVE_TIP_NOTE = 'Live tip from the cloud model.';
+/** Shown under a delivered tip from the configured Qwen endpoint. */
+export const LIVE_TIP_NOTE = 'Live tip from Qwen3-VL 2B.';
 
 export const COACH_BUTTON_LABEL = 'Get a tip';
 
@@ -58,7 +58,7 @@ export const READ_ALOUD_OFF = 'Read tips aloud: off';
 
 export const READ_ALOUD_NOTE = 'Tips are read aloud. Turn sound off to silence them.';
 
-export const SPARK_ENABLE_LABEL = 'Enable Spark coaching';
+export const QWEN_ENABLE_LABEL = 'Enable Qwen coaching';
 
 export const COACH_IMPORT_LABEL = 'Show a tip from a file';
 

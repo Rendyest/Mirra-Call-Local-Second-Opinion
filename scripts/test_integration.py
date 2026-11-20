@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from muse_coaching import generate_coaching
+from qwen_coaching import generate_coaching
 
 ROOT = Path(__file__).resolve().parent.parent
 EVENT_DIR = ROOT / "data" / "coaching_events"
@@ -11,7 +11,7 @@ EVENT_DIR = ROOT / "data" / "coaching_events"
 
 def process_struggle_event(flags, movement_data, gate_ok=True):
     """
-    Simulate the handoff from System 1 to Muse Spark.
+    Simulate the handoff from System 1 to Qwen.
 
     Only request coaching when:
     - The measurement quality gate passes.
@@ -23,10 +23,10 @@ def process_struggle_event(flags, movement_data, gate_ok=True):
         return None
 
     if not flags:
-        print("No struggle detected. Muse Spark not called.")
+        print("No struggle detected. Qwen not called.")
         return None
 
-    # Package the detector's observations for Muse Spark.
+    # Package the detector's observations for Qwen.
     event = {
         "task": movement_data.get("task", "face_washing"),
         "struggle_flags": flags,
@@ -34,7 +34,7 @@ def process_struggle_event(flags, movement_data, gate_ok=True):
     }
 
     print("Struggle detected:", flags)
-    print("Requesting coaching from Muse Spark...")
+    print("Requesting coaching from Qwen...")
 
     coaching = generate_coaching(event)
 
@@ -43,7 +43,7 @@ def process_struggle_event(flags, movement_data, gate_ok=True):
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "source": "simulated_integration_test",
         "system1_event": event,
-        "muse_coaching": coaching,
+        "qwen_coaching": coaching,
     }
 
     EVENT_DIR.mkdir(parents=True, exist_ok=True)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     )
 
     if struggle:
-        print("\nMuse Spark coaching response:")
-        print(json.dumps(struggle["muse_coaching"], indent=2))
+        print("\nQwen coaching response:")
+        print(json.dumps(struggle["qwen_coaching"], indent=2))
 
     print("\nIntegration test complete.")

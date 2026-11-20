@@ -13,20 +13,19 @@ const GOOD_BODY: CoachSummary = {
   system1: { state: 'hesitating', top_signal: 'stall' },
 };
 
-function museResponse(cue: string) {
+function qwenResponse(cue: string) {
   return {
-    status: 'completed',
-    output: [
-      { type: 'reasoning' },
-      { type: 'message', content: [{ type: 'output_text', text: JSON.stringify({
+    choices: [
+      { message: { content: JSON.stringify({
         struggling: true, signal: 'timing', body_part: 'arm', severity: 'mild',
         cue_text: cue, ask_pain_check: false, safety_concern: false,
-      }) }] },
+      }) } },
     ],
   };
 }
 
-function readObservations(input: string): unknown {
+function readObservations(messages: Array<{ role: string; content: string }>): unknown {
+  const input = messages.find((message) => message.role === 'user')?.content ?? '';
   return JSON.parse(input.split('Movement observations:\n')[1]);
 }
 
@@ -100,7 +99,7 @@ async function postJson(url: string, body: unknown): Promise<{ status: number; j
 describe('coach proxy', () => {
   it('forwards the TypeScript client through the Vite route without browser credentials', async () => {
     const upstream = vi.fn<typeof fetch>().mockResolvedValue(
-      Response.json(museResponse('Take your time.')),
+      Response.json(qwenResponse('Take your time.')),
     );
     const server = createCoachServer({
       apiKey: 'server-only-stub-key', timeoutMs: 1000, cooldownMs: 0,
@@ -125,7 +124,7 @@ describe('coach proxy', () => {
       expect(JSON.parse(String(clientFetch.mock.calls[0][1]?.body))).toEqual(GOOD_BODY);
       expect(upstream).toHaveBeenCalledOnce();
       const [url, init] = upstream.mock.calls[0];
-      expect(url).toBe('https://api.meta.ai/v1/responses');
+      expect(url).toBe('http://127.0.0.1:11434/v1/chat/completions');
       expect(new Headers(init?.headers).get('authorization')).toBe('Bearer server-only-stub-key');
       expect(init?.body).not.toContain('server-only-stub-key');
     } finally {
@@ -137,10 +136,8 @@ describe('coach proxy', () => {
 
   it.each([
     [429, () => Promise.resolve(new Response(null, { status: 429 }))],
-    [502, () => Promise.resolve(Response.json({ ...museResponse('Wait.'), status: 'incomplete' }))],
-    [502, () => Promise.resolve(Response.json({ status: 'completed', output: [
-      { type: 'message', content: [{ type: 'output_text', text: '{"cue_text":"Wait."}' }] },
-    ] }))],
+    [502, () => Promise.resolve(Response.json({ choices: [] }))],
+    [502, () => Promise.resolve(Response.json({ choices: [{ message: { content: '{"cue_text":"Wait."}' } }] }))],
     [502, () => Promise.reject(new Error('Network error'))],
     [504, (_url, init) => new Promise<Response>((_, reject) => {
       init?.signal?.addEventListener('abort', () => reject(new Error('Aborted')), { once: true });
@@ -169,7 +166,7 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async () => ({
         ok: true,
-        json: async () => museResponse('Take your time.'),
+        json: async () => qwenResponse('Take your time.'),
       })) as unknown as typeof fetch,
     });
     const url = await listen(server);
@@ -182,6 +179,64 @@ describe('coach proxy', () => {
     }
   });
 
+  it('logs coach_live with qwen3-vl:2b on every successful call', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const server = createCoachServer({
+      apiKey: 'test-key',
+      timeoutMs: 5000,
+      cooldownMs: 0,
+      maxReplyChars: 300,
+      fetchImpl: (async () => ({
+        ok: true,
+        json: async () => qwenResponse('Take your time.'),
+      })) as unknown as typeof fetch,
+    });
+    const url = await listen(server);
+    try {
+      const first = await postJson(url, GOOD_BODY);
+      expect(first.status).toBe(200);
+      const liveLogs = logSpy.mock.calls.filter((args) => {
+        const [entry] = args;
+        return entry !== null && typeof entry === 'object' && (entry as { event?: unknown }).event === 'coach_live';
+      });
+      expect(liveLogs).toHaveLength(1);
+      expect(liveLogs[0][0]).toMatchObject({ event: 'coach_live', model: 'qwen3-vl:2b' });
+      const second = await postJson(url, GOOD_BODY);
+      expect(second.status).toBe(200);
+      expect(logSpy.mock.calls.filter((args) => (args[0] as { event?: unknown })?.event === 'coach_live')).toHaveLength(2);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
+  it('does not log coach_live when the summary is rejected', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const server = createCoachServer({
+      apiKey: 'test-key',
+      timeoutMs: 5000,
+      cooldownMs: 0,
+      maxReplyChars: 300,
+      fetchImpl: (async () => ({
+        ok: true,
+        json: async () => qwenResponse('Take your time.'),
+      })) as unknown as typeof fetch,
+    });
+    const url = await listen(server);
+    try {
+      const { status } = await postJson(url, { ...GOOD_BODY, photo: 'data:image/png;base64,' + 'B'.repeat(600) });
+      expect(status).toBe(400);
+      expect(logSpy.mock.calls.some((args) => (args[0] as { event?: unknown })?.event === 'coach_live')).toBe(false);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      logSpy.mockRestore();
+      errSpy.mockRestore();
+    }
+  });
+
   it('rejects a body carrying image data without calling upstream', async () => {
     let upstreamCalls = 0;
     const server = createCoachServer({
@@ -191,7 +246,7 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async () => {
         upstreamCalls += 1;
-        return { ok: true, json: async () => museResponse('hi') };
+        return { ok: true, json: async () => qwenResponse('hi') };
       }) as unknown as typeof fetch,
     });
     const url = await listen(server);
@@ -214,7 +269,7 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async (_url: unknown, init?: { body?: unknown }) => {
         sentBody = String(init?.body ?? '');
-        return { ok: true, json: async () => museResponse('Take your time.') };
+        return { ok: true, json: async () => qwenResponse('Take your time.') };
       }) as unknown as typeof fetch,
     });
     const url = await listen(server);
@@ -222,12 +277,16 @@ describe('coach proxy', () => {
       expect((await postJson(url, GOOD_BODY)).status).toBe(200);
       const upstream = JSON.parse(sentBody) as Record<string, unknown>;
       expect(upstream).toEqual({
-        model: 'muse-spark-1.3',
-        input: expect.stringContaining('ONE small adjustment'),
-        reasoning: { effort: 'low' },
-        max_output_tokens: 1200,
+        model: 'qwen3-vl:2b',
+        messages: [
+          { role: 'system', content: expect.stringContaining('ONE small adjustment') },
+          { role: 'user', content: expect.stringContaining('Movement observations:') },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.2,
+        max_tokens: 1200,
       });
-      expect(readObservations(upstream.input as string)).toEqual({
+      expect(readObservations(upstream.messages as Array<{ role: string; content: string }>)).toEqual({
         ...GOOD_BODY,
         system1: { state: 'hesitating', top_signal: 'paused' },
       });
@@ -245,7 +304,7 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async () => ({
         ok: true,
-        json: async () => museResponse('Take your time.'),
+        json: async () => qwenResponse('Take your time.'),
       })) as unknown as typeof fetch,
     });
     const url = await listen(server);
@@ -265,7 +324,7 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async () => ({
         ok: true,
-        json: async () => museResponse(reply),
+        json: async () => qwenResponse(reply),
       })) as unknown as typeof fetch,
     });
   }
@@ -300,14 +359,14 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async (_url: unknown, init?: { body?: unknown }) => {
         sentBody = String(init?.body ?? '');
-        return { ok: true, json: async () => museResponse('Take your time.') };
+        return { ok: true, json: async () => qwenResponse('Take your time.') };
       }) as unknown as typeof fetch,
     });
     const url = await listen(server);
     try {
       const body = { ...GOOD_BODY, system1: { state: 'hesitating', top_signal: 'stall' } };
       expect((await postJson(url, body)).status).toBe(200);
-      const upstream = readObservations(JSON.parse(sentBody).input) as { system1: { top_signal: string } };
+      const upstream = readObservations(JSON.parse(sentBody).messages) as { system1: { top_signal: string } };
       expect(upstream.system1.top_signal).toBe('paused');
       expect(sentBody).not.toContain('stall');
     } finally {
@@ -324,14 +383,14 @@ describe('coach proxy', () => {
       maxReplyChars: 300,
       fetchImpl: (async (_url: unknown, init?: { body?: unknown }) => {
         sentBody = String(init?.body ?? '');
-        return { ok: true, json: async () => museResponse('Take your time.') };
+        return { ok: true, json: async () => qwenResponse('Take your time.') };
       }) as unknown as typeof fetch,
     });
     const url = await listen(server);
     try {
       const body = { ...GOOD_BODY, system1: { state: 'struggling', top_signal: 'drop' } };
       expect((await postJson(url, body)).status).toBe(200);
-      const upstream = readObservations(JSON.parse(sentBody).input) as { system1: { top_signal: string } };
+      const upstream = readObservations(JSON.parse(sentBody).messages) as { system1: { top_signal: string } };
       expect(upstream.system1.top_signal).toBe('arm lowering');
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
