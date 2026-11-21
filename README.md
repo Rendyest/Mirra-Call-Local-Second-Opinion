@@ -39,7 +39,7 @@ This repository is the Open Reference Implementation of Mirra Call. It is meant 
 - **No depth camera is needed.** A standard RGB camera is enough.
 - **Everything stays on the device.** No cloud service or frontier model API is required.
 
-The hardware build guide is not in this repository yet.
+The full hardware build guide is in development and is not in this repository yet. An early concept for it, a modular mirror where assembling it is the first rehabilitation exercise, is published as [PeaceByPiece](https://github.com/Rendyest/SomeAssemblyRequired). It is a concept-stage design exploration, not a tested build guide.
 
 ## Stack
 
