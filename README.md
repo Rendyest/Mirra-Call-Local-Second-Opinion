@@ -1,4 +1,4 @@
-# Mirra Call Local Second Opinion — webcam coaching demo (Open Reference Implementation)
+# Second Opinion for Mirra Call — webcam coaching demo (Open Reference Implementation)
 
 A webcam demo that guides a participant through washing their face with a face
 towel, with live movement feedback and coaching tips. Participant routes are
