@@ -117,4 +117,4 @@ output): save them elsewhere and never overwrite `results/results.json`.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Copyright (c) 2026 Rendyest.
+MIT — see [LICENSE](./LICENSE). Copyright (c) 2026 Lunate Labs.
