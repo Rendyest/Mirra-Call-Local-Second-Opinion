@@ -1,4 +1,4 @@
-# Mirra Call: Second Opinion (Open Reference Implementation)
+# Mirra Call's Second Opinion (Open Reference Implementation)
 
 **Mirra Call is a local-first, computer-vision coaching mirror for upper-extremity rehab and self-care.** Small on-device models guide older adults through everyday hand and arm tasks, like washing the face, with live movement feedback and plain-language coaching tips. It is built for older adults in continuing care and community programs, for the aides and recreation staff who supervise sessions, and for the occupational therapists who write the tasks and keep clinical oversight.
 
